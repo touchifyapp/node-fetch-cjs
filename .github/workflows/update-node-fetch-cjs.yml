@@ -1,0 +1,52 @@
+name: Update node-fetch build
+
+on:
+  push:
+    paths:
+      - VERSION
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+          registry-url: https://registry.npmjs.org
+            
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Build updated node-fetch-cjs
+        run: npm run build
+
+      - name: Test updated build
+        run: npm test
+
+      - name: Check for modified files
+        id: git-check
+        run: echo ::set-output name=modified::$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
+
+      - name: Commit latest release
+        if: steps.git-check.outputs.modified == 'true'
+        run: |
+          git config --global user.name 'Touchify Bot'
+          git config --global user.email 'gitbot@touchify.io'
+
+          git commit -am "chore: release node-fetch-cjs v$(cat VERSION)"
+          git tag v$(cat VERSION)
+
+          git push
+          git push --tags
+
+      - name: Publish to npm
+        if: steps.git-check.outputs.modified == 'true'
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

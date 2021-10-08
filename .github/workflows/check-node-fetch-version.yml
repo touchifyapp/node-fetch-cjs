@@ -1,0 +1,38 @@
+name: Check latest node-fetch released version
+
+on:
+  schedule:
+    - cron:  '0 10 * * *'
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+            
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Fetch release version
+        run: npm run check
+
+      - name: Check for modified files
+        id: git-check
+        run: echo ::set-output name=modified::$([ -z "`git status --porcelain`" ] && echo "false" || echo "true")
+
+      - name: Commit latest release version
+        if: steps.git-check.outputs.modified == 'true'
+        run: |
+          git config --global user.name 'Touchify Bot'
+          git config --global user.email 'gitbot@touchify.io'
+          
+          git commit -am "chore: update node-fetch version"
+          git push

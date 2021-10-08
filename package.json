@@ -1,0 +1,55 @@
+{
+  "name": "node-fetch-cjs",
+  "version": "3.0.0",
+  "description": "A wrapper for node-fetch (a light-weight module that brings Fetch API to node.js) to be used in commonjs environment.",
+  "main": "./dist/index.js",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "types": "./dist/index.d.ts",
+  "engines": {
+    "node": "^12.20.0 || ^14.13.1 || >=16.0.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/touchifyapp/node-fetch-cjs.git"
+  },
+  "keywords": [
+    "fetch",
+    "http",
+    "promise",
+    "request",
+    "curl",
+    "wget",
+    "xhr",
+    "whatwg",
+    "cjs",
+    "commonjs"
+  ],
+  "author": "Touchify",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/node-fetch/node-fetch/issues"
+  },
+  "homepage": "https://github.com/node-fetch/node-fetch",
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/node-fetch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.13.4",
+    "jest": "^27.2.4",
+    "node-fetch": "3.0.0",
+    "npm-run-all": "^4.1.5"
+  },
+  "dependencies": {
+    "data-uri-to-buffer": "^3.0.1",
+    "fetch-blob": "^3.1.2"
+  }
+}
