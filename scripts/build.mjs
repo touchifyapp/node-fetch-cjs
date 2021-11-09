@@ -20,7 +20,7 @@ async function update_version() {
     pkg.version = version;
     pkg.devDependencies["node-fetch"] = version;
 
-    await writeJSON("package.json", my_pkg);
+    await writeJSON("package.json", pkg);
     await spawn("npm", ["install"], { stdio: "inherit" });
 }
 
