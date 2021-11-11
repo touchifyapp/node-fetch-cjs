@@ -44,10 +44,16 @@ test("should export isRedirect", async () => {
     expect(typeof isRedirect).toBe("function");
 });
 
-/*
-AbortError,
-FetchError,
-Headers,
-Request,
-Response,
-isRedirect*/
+test("should export Blob", async () => {
+    const { Blob } = require("../dist");
+    const blob = new Blob(["content"], { type: "text/plain" });
+    expect(await blob.text()).toBe("content");
+});
+
+test("should export FormData", async () => {
+    const { FormData } = require("../dist");
+    const data = new FormData();
+    data.append("key", "value");
+
+    expect(data.get("key")).toBe("value");
+});

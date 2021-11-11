@@ -44,6 +44,23 @@ const headers = new fetch.Headers();
 
 Full documentation is available on the [node-fetch](https://github.com/node-fetch/node-fetch) repository.
 
+## Differences
+
+In order to be fully CJS compatible, we had to bundle dependencies from `node-fetch` directly into this package.
+This means that both `fetch-blob` and `formdata-polyfill` are bundled.
+
+For your convenience, these dependencies are exported to allow you to use them in your code:
+
+```javascript
+const { Blob, FormData } = require("node-fetch-cjs");
+
+const blob = new Blob(["content"], { type: "text/plain" });
+const text = await blob.text();
+
+const data = new FormData();
+data.append("key", "value");
+```
+
 ## TypeScript
 
 Types are bundled with `node-fetch-cjs`, so you don't need to install any additional packages.
