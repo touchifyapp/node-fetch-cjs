@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import esbuild from "esbuild";
-import { readJSON, writeJSON, spawn, objectEquals } from "./util.mjs";
+import { readJSON, writeJSON, spawn } from "./util.mjs";
 
 main();
 
@@ -8,6 +8,7 @@ async function main() {
     await update_version();
     await update_dependencies();
     await build_node_fetch();
+    await remove_node_protocol();
     await update_types();
 }
 
@@ -72,6 +73,12 @@ async function build_node_fetch() {
     }
 
     console.log("✅ node-fetch was build successfully!");
+}
+
+async function remove_node_protocol() {
+    const content = await fs.readFile("dist/index.js", "utf-8");
+    const processed = content.replace(/"node:/g, `"`);
+    await fs.writeFile("dist/index.js", processed);
 }
 
 async function update_types() {
