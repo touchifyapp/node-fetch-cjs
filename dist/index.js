@@ -3619,12 +3619,12 @@ var require_streams = __commonJS({
     var POOL_SIZE2 = 65536;
     if (!globalThis.ReadableStream) {
       try {
-        const process2 = require("node:process");
+        const process2 = require("process");
         const { emitWarning } = process2;
         try {
           process2.emitWarning = () => {
           };
-          Object.assign(globalThis, require("node:stream/web"));
+          Object.assign(globalThis, require("stream/web"));
           process2.emitWarning = emitWarning;
         } catch (error) {
           process2.emitWarning = emitWarning;
@@ -3959,9 +3959,9 @@ var init_esm_min = __esm({
 var import_node_fs, import_node_path, import_node_worker_threads, stat, DOMException2, BlobDataItem;
 var init_from = __esm({
   "node_modules/fetch-blob/from.js"() {
-    import_node_fs = __toModule(require("node:fs"));
-    import_node_path = __toModule(require("node:path"));
-    import_node_worker_threads = __toModule(require("node:worker_threads"));
+    import_node_fs = __toModule(require("fs"));
+    import_node_path = __toModule(require("path"));
+    import_node_worker_threads = __toModule(require("worker_threads"));
     init_file();
     init_fetch_blob();
     ({ stat } = import_node_fs.promises);
@@ -4375,10 +4375,10 @@ __export(exports, {
 });
 
 // node_modules/node-fetch/src/index.js
-var import_node_http2 = __toModule(require("node:http"));
-var import_node_https = __toModule(require("node:https"));
-var import_node_zlib = __toModule(require("node:zlib"));
-var import_node_stream2 = __toModule(require("node:stream"));
+var import_node_http2 = __toModule(require("http"));
+var import_node_https = __toModule(require("https"));
+var import_node_zlib = __toModule(require("zlib"));
+var import_node_stream2 = __toModule(require("stream"));
 
 // node_modules/data-uri-to-buffer/dist/index.js
 function dataUriToBuffer(uri) {
@@ -4420,8 +4420,8 @@ function dataUriToBuffer(uri) {
 var dist_default = dataUriToBuffer;
 
 // node_modules/node-fetch/src/body.js
-var import_node_stream = __toModule(require("node:stream"));
-var import_node_util = __toModule(require("node:util"));
+var import_node_stream = __toModule(require("stream"));
+var import_node_util = __toModule(require("util"));
 init_fetch_blob();
 init_esm_min();
 
@@ -4673,8 +4673,8 @@ var writeToStream = (dest, { body }) => {
 };
 
 // node_modules/node-fetch/src/headers.js
-var import_node_util2 = __toModule(require("node:util"));
-var import_node_http = __toModule(require("node:http"));
+var import_node_util2 = __toModule(require("util"));
+var import_node_http = __toModule(require("http"));
 var validateHeaderName = typeof import_node_http.default.validateHeaderName === "function" ? import_node_http.default.validateHeaderName : (name) => {
   if (!/^[\^`\-\w!#$%&'*+.|~]+$/.test(name)) {
     const error = new TypeError(`Header name must be a valid HTTP token [${name}]`);
@@ -4927,7 +4927,7 @@ Object.defineProperties(Response.prototype, {
 });
 
 // node_modules/node-fetch/src/request.js
-var import_node_url = __toModule(require("node:url"));
+var import_node_url = __toModule(require("url"));
 
 // node_modules/node-fetch/src/utils/get-search.js
 var getSearch = (parsedURL) => {
