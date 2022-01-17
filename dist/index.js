@@ -4379,6 +4379,7 @@ var import_node_http2 = __toModule(require("http"));
 var import_node_https = __toModule(require("https"));
 var import_node_zlib = __toModule(require("zlib"));
 var import_node_stream2 = __toModule(require("stream"));
+var import_node_buffer2 = __toModule(require("buffer"));
 
 // node_modules/data-uri-to-buffer/dist/index.js
 function dataUriToBuffer(uri) {
@@ -4422,6 +4423,7 @@ var dist_default = dataUriToBuffer;
 // node_modules/node-fetch/src/body.js
 var import_node_stream = __toModule(require("stream"));
 var import_node_util = __toModule(require("util"));
+var import_node_buffer = __toModule(require("buffer"));
 init_fetch_blob();
 init_esm_min();
 
@@ -4462,8 +4464,14 @@ var isBlob = (object) => {
 var isAbortSignal = (object) => {
   return typeof object === "object" && (object[NAME] === "AbortSignal" || object[NAME] === "EventTarget");
 };
+var isDomainOrSubdomain = (destination, original) => {
+  const orig = new URL(original).hostname;
+  const dest = new URL(destination).hostname;
+  return orig === dest || orig[orig.length - dest.length - 1] === "." && orig.endsWith(dest);
+};
 
 // node_modules/node-fetch/src/body.js
+var pipeline = (0, import_node_util.promisify)(import_node_stream.default.pipeline);
 var INTERNALS = Symbol("Body internals");
 var Body = class {
   constructor(body, {
@@ -4473,22 +4481,22 @@ var Body = class {
     if (body === null) {
       body = null;
     } else if (isURLSearchParameters(body)) {
-      body = Buffer.from(body.toString());
+      body = import_node_buffer.Buffer.from(body.toString());
     } else if (isBlob(body)) {
-    } else if (Buffer.isBuffer(body)) {
+    } else if (import_node_buffer.Buffer.isBuffer(body)) {
     } else if (import_node_util.types.isAnyArrayBuffer(body)) {
-      body = Buffer.from(body);
+      body = import_node_buffer.Buffer.from(body);
     } else if (ArrayBuffer.isView(body)) {
-      body = Buffer.from(body.buffer, body.byteOffset, body.byteLength);
+      body = import_node_buffer.Buffer.from(body.buffer, body.byteOffset, body.byteLength);
     } else if (body instanceof import_node_stream.default) {
     } else if (body instanceof FormData) {
       body = formDataToBlob(body);
       boundary = body.type.split("=")[1];
     } else {
-      body = Buffer.from(String(body));
+      body = import_node_buffer.Buffer.from(String(body));
     }
     let stream = body;
-    if (Buffer.isBuffer(body)) {
+    if (import_node_buffer.Buffer.isBuffer(body)) {
       stream = import_node_stream.default.Readable.from(body);
     } else if (isBlob(body)) {
       stream = import_node_stream.default.Readable.from(body.stream());
@@ -4533,7 +4541,7 @@ var Body = class {
   }
   async blob() {
     const ct = this.headers && this.headers.get("content-type") || this[INTERNALS].body && this[INTERNALS].body.type || "";
-    const buf = await this.buffer();
+    const buf = await this.arrayBuffer();
     return new fetch_blob_default([buf], {
       type: ct
     });
@@ -4557,7 +4565,9 @@ Object.defineProperties(Body.prototype, {
   arrayBuffer: { enumerable: true },
   blob: { enumerable: true },
   json: { enumerable: true },
-  text: { enumerable: true }
+  text: { enumerable: true },
+  data: { get: (0, import_node_util.deprecate)(() => {
+  }, "data doesn't exist, use json(), text(), arrayBuffer(), or body instead", "https://github.com/node-fetch/node-fetch/issues/1000 (response)") }
 });
 async function consumeBody(data) {
   if (data[INTERNALS].disturbed) {
@@ -4569,10 +4579,10 @@ async function consumeBody(data) {
   }
   const { body } = data;
   if (body === null) {
-    return Buffer.alloc(0);
+    return import_node_buffer.Buffer.alloc(0);
   }
   if (!(body instanceof import_node_stream.default)) {
-    return Buffer.alloc(0);
+    return import_node_buffer.Buffer.alloc(0);
   }
   const accum = [];
   let accumBytes = 0;
@@ -4593,9 +4603,9 @@ async function consumeBody(data) {
   if (body.readableEnded === true || body._readableState.ended === true) {
     try {
       if (accum.every((c) => typeof c === "string")) {
-        return Buffer.from(accum.join(""));
+        return import_node_buffer.Buffer.from(accum.join(""));
       }
-      return Buffer.concat(accum, accumBytes);
+      return import_node_buffer.Buffer.concat(accum, accumBytes);
     } catch (error) {
       throw new FetchError(`Could not create Buffer from response body for ${data.url}: ${error.message}`, "system", error);
     }
@@ -4634,7 +4644,7 @@ var extractContentType = (body, request) => {
   if (isBlob(body)) {
     return body.type || null;
   }
-  if (Buffer.isBuffer(body) || import_node_util.types.isAnyArrayBuffer(body) || ArrayBuffer.isView(body)) {
+  if (import_node_buffer.Buffer.isBuffer(body) || import_node_util.types.isAnyArrayBuffer(body) || ArrayBuffer.isView(body)) {
     return null;
   }
   if (body instanceof FormData) {
@@ -4656,7 +4666,7 @@ var getTotalBytes = (request) => {
   if (isBlob(body)) {
     return body.size;
   }
-  if (Buffer.isBuffer(body)) {
+  if (import_node_buffer.Buffer.isBuffer(body)) {
     return body.length;
   }
   if (body && typeof body.getLengthSync === "function") {
@@ -4664,11 +4674,11 @@ var getTotalBytes = (request) => {
   }
   return null;
 };
-var writeToStream = (dest, { body }) => {
+var writeToStream = async (dest, { body }) => {
   if (body === null) {
     dest.end();
   } else {
-    body.pipe(dest);
+    await pipeline(body, dest);
   }
 };
 
@@ -4928,6 +4938,7 @@ Object.defineProperties(Response.prototype, {
 
 // node_modules/node-fetch/src/request.js
 var import_node_url = __toModule(require("url"));
+var import_node_util3 = __toModule(require("util"));
 
 // node_modules/node-fetch/src/utils/get-search.js
 var getSearch = (parsedURL) => {
@@ -4940,7 +4951,7 @@ var getSearch = (parsedURL) => {
 };
 
 // node_modules/node-fetch/src/utils/referrer.js
-var import_net = __toModule(require("net"));
+var import_node_net = __toModule(require("net"));
 function stripURLForUseAsAReferrer(url, originOnly = false) {
   if (url == null) {
     return "no-referrer";
@@ -4981,7 +4992,7 @@ function isOriginPotentiallyTrustworthy(url) {
     return true;
   }
   const hostIp = url.host.replace(/(^\[)|(]$)/g, "");
-  const hostIPVersion = (0, import_net.isIP)(hostIp);
+  const hostIPVersion = (0, import_node_net.isIP)(hostIp);
   if (hostIPVersion === 4 && /^127\./.test(hostIp)) {
     return true;
   }
@@ -5084,6 +5095,8 @@ var INTERNALS3 = Symbol("Request internals");
 var isRequest = (object) => {
   return typeof object === "object" && typeof object[INTERNALS3] === "object";
 };
+var doBadDataWarn = (0, import_node_util3.deprecate)(() => {
+}, ".data is not a valid RequestInit property, use .body instead", "https://github.com/node-fetch/node-fetch/issues/1000 (request)");
 var Request = class extends Body {
   constructor(input, init = {}) {
     let parsedURL;
@@ -5098,7 +5111,10 @@ var Request = class extends Body {
     }
     let method = init.method || input.method || "GET";
     method = method.toUpperCase();
-    if ((init.body != null || isRequest(input)) && input.body !== null && (method === "GET" || method === "HEAD")) {
+    if ("data" in init) {
+      doBadDataWarn();
+    }
+    if ((init.body != null || isRequest(input) && input.body !== null) && (method === "GET" || method === "HEAD")) {
       throw new TypeError("Request with GET/HEAD method cannot have body");
     }
     const inputBody = init.body ? init.body : isRequest(input) && input.body !== null ? clone(input) : null;
@@ -5295,7 +5311,7 @@ async function fetch(url, options_) {
       abort();
       finalize();
     };
-    const request_ = send(parsedURL, options);
+    const request_ = send(parsedURL.toString(), options);
     if (signal) {
       signal.addEventListener("abort", abortAndFinalize);
     }
@@ -5332,16 +5348,22 @@ async function fetch(url, options_) {
       const headers = fromRawHeaders(response_.rawHeaders);
       if (isRedirect(response_.statusCode)) {
         const location = headers.get("Location");
-        const locationURL = location === null ? null : new URL(location, request.url);
+        let locationURL = null;
+        try {
+          locationURL = location === null ? null : new URL(location, request.url);
+        } catch {
+          if (request.redirect !== "manual") {
+            reject(new FetchError(`uri requested responds with an invalid redirect URL: ${location}`, "invalid-redirect"));
+            finalize();
+            return;
+          }
+        }
         switch (request.redirect) {
           case "error":
             reject(new FetchError(`uri requested responds with a redirect, redirect mode is set to error: ${request.url}`, "no-redirect"));
             finalize();
             return;
           case "manual":
-            if (locationURL !== null) {
-              headers.set("Location", locationURL);
-            }
             break;
           case "follow": {
             if (locationURL === null) {
@@ -5365,6 +5387,11 @@ async function fetch(url, options_) {
               referrer: request.referrer,
               referrerPolicy: request.referrerPolicy
             };
+            if (!isDomainOrSubdomain(request.url, locationURL)) {
+              for (const name of ["authorization", "www-authenticate", "cookie", "cookie2"]) {
+                requestOptions.headers.delete(name);
+              }
+            }
             if (response_.statusCode !== 303 && request.body && options_.body instanceof import_node_stream2.default.Readable) {
               reject(new FetchError("Cannot follow redirect with body being a readable stream", "unsupported-redirect"));
               finalize();
@@ -5439,11 +5466,11 @@ async function fetch(url, options_) {
       response = new Response(body, responseOptions);
       resolve(response);
     });
-    writeToStream(request_, request);
+    writeToStream(request_, request).catch(reject);
   });
 }
 function fixResponseChunkedTransferBadEnding(request, errorCallback) {
-  const LAST_CHUNK = Buffer.from("0\r\n\r\n");
+  const LAST_CHUNK = import_node_buffer2.Buffer.from("0\r\n\r\n");
   let isChunkedTransfer = false;
   let properLastChunkReceived = false;
   let previousChunk;
@@ -5464,9 +5491,9 @@ function fixResponseChunkedTransferBadEnding(request, errorCallback) {
       socket.removeListener("close", onSocketClose);
     });
     socket.on("data", (buf) => {
-      properLastChunkReceived = Buffer.compare(buf.slice(-5), LAST_CHUNK) === 0;
+      properLastChunkReceived = import_node_buffer2.Buffer.compare(buf.slice(-5), LAST_CHUNK) === 0;
       if (!properLastChunkReceived && previousChunk) {
-        properLastChunkReceived = Buffer.compare(previousChunk.slice(-3), LAST_CHUNK.slice(0, 3)) === 0 && Buffer.compare(buf.slice(-2), LAST_CHUNK.slice(3)) === 0;
+        properLastChunkReceived = import_node_buffer2.Buffer.compare(previousChunk.slice(-3), LAST_CHUNK.slice(0, 3)) === 0 && import_node_buffer2.Buffer.compare(buf.slice(-2), LAST_CHUNK.slice(3)) === 0;
       }
       previousChunk = buf;
     });
