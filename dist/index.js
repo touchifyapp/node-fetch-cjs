@@ -3678,9 +3678,9 @@ async function* toIterator(parts, clone2 = true) {
         yield part;
       }
     } else {
-      let position = 0;
-      while (position !== part.size) {
-        const chunk = part.slice(position, Math.min(part.size, position + POOL_SIZE));
+      let position = 0, b = part;
+      while (position !== b.size) {
+        const chunk = b.slice(position, Math.min(b.size, position + POOL_SIZE));
         const buffer = await chunk.arrayBuffer();
         position += buffer.byteLength;
         yield new Uint8Array(buffer);
@@ -3697,6 +3697,7 @@ var init_fetch_blob = __esm({
       #parts = [];
       #type = "";
       #size = 0;
+      #endings = "transparent";
       constructor(blobParts = [], options = {}) {
         if (typeof blobParts !== "object" || blobParts === null) {
           throw new TypeError("Failed to construct 'Blob': The provided value cannot be converted to a sequence.");
@@ -3719,11 +3720,12 @@ var init_fetch_blob = __esm({
           } else if (element instanceof Blob) {
             part = element;
           } else {
-            part = encoder.encode(element);
+            part = encoder.encode(`${element}`);
           }
           this.#size += ArrayBuffer.isView(part) ? part.byteLength : part.size;
           this.#parts.push(part);
         }
+        this.#endings = `${options.endings === void 0 ? "transparent" : options.endings}`;
         const type = options.type === void 0 ? "" : String(options.type);
         this.#type = /^[\x20-\x7E]*$/.test(type) ? type : "";
       }
@@ -3846,6 +3848,9 @@ var init_file = __esm({
       get [Symbol.toStringTag]() {
         return "File";
       }
+      static [Symbol.hasInstance](object) {
+        return !!object && object instanceof fetch_blob_default && /^(File)$/.test(object[Symbol.toStringTag]);
+      }
     };
     File2 = _File;
     file_default = File2;
@@ -3955,25 +3960,47 @@ var init_esm_min = __esm({
   }
 });
 
+// node_modules/node-domexception/index.js
+var require_node_domexception = __commonJS({
+  "node_modules/node-domexception/index.js"(exports, module2) {
+    if (!globalThis.DOMException) {
+      try {
+        const { MessageChannel } = require("worker_threads"), port = new MessageChannel().port1, ab = new ArrayBuffer();
+        port.postMessage(ab, [ab, ab]);
+      } catch (err) {
+        err.constructor.name === "DOMException" && (globalThis.DOMException = err.constructor);
+      }
+    }
+    module2.exports = globalThis.DOMException;
+  }
+});
+
 // node_modules/fetch-blob/from.js
-var import_node_fs, import_node_path, import_node_worker_threads, stat, DOMException2, BlobDataItem;
+var import_node_fs, import_node_path, import_node_domexception, stat, blobFromSync, blobFrom, fileFrom, fileFromSync, fromBlob, fromFile, BlobDataItem;
 var init_from = __esm({
   "node_modules/fetch-blob/from.js"() {
     import_node_fs = __toModule(require("fs"));
     import_node_path = __toModule(require("path"));
-    import_node_worker_threads = __toModule(require("worker_threads"));
+    import_node_domexception = __toModule(require_node_domexception());
     init_file();
     init_fetch_blob();
     ({ stat } = import_node_fs.promises);
-    DOMException2 = globalThis.DOMException || (() => {
-      const port = new import_node_worker_threads.MessageChannel().port1;
-      const ab = new ArrayBuffer(0);
-      try {
-        port.postMessage(ab, [ab, ab]);
-      } catch (err) {
-        return err.constructor;
-      }
-    })();
+    blobFromSync = (path, type) => fromBlob((0, import_node_fs.statSync)(path), path, type);
+    blobFrom = (path, type) => stat(path).then((stat2) => fromBlob(stat2, path, type));
+    fileFrom = (path, type) => stat(path).then((stat2) => fromFile(stat2, path, type));
+    fileFromSync = (path, type) => fromFile((0, import_node_fs.statSync)(path), path, type);
+    fromBlob = (stat2, path, type = "") => new fetch_blob_default([new BlobDataItem({
+      path,
+      size: stat2.size,
+      lastModified: stat2.mtimeMs,
+      start: 0
+    })], { type });
+    fromFile = (stat2, path, type = "") => new file_default([new BlobDataItem({
+      path,
+      size: stat2.size,
+      lastModified: stat2.mtimeMs,
+      start: 0
+    })], (0, import_node_path.basename)(path), { type, lastModified: stat2.mtimeMs });
     BlobDataItem = class {
       #path;
       #start;
@@ -3988,13 +4015,13 @@ var init_from = __esm({
           path: this.#path,
           lastModified: this.lastModified,
           size: end - start,
-          start
+          start: this.#start + start
         });
       }
       async *stream() {
         const { mtimeMs } = await stat(this.#path);
         if (mtimeMs > this.lastModified) {
-          throw new DOMException2("The requested file could not be read, typically due to permission problems that have occurred after a reference to a file was acquired.", "NotReadableError");
+          throw new import_node_domexception.default("The requested file could not be read, typically due to permission problems that have occurred after a reference to a file was acquired.", "NotReadableError");
         }
         yield* (0, import_node_fs.createReadStream)(this.#path, {
           start: this.#start,
@@ -4366,11 +4393,16 @@ __export(exports, {
   AbortError: () => AbortError,
   Blob: () => Blob2,
   FetchError: () => FetchError,
+  File: () => file_default,
   FormData: () => FormData,
   Headers: () => Headers,
   Request: () => Request,
   Response: () => Response,
+  blobFrom: () => blobFrom,
+  blobFromSync: () => blobFromSync,
   default: () => fetch,
+  fileFrom: () => fileFrom,
+  fileFromSync: () => fileFromSync,
   isRedirect: () => isRedirect
 });
 
@@ -4467,7 +4499,7 @@ var isAbortSignal = (object) => {
 var isDomainOrSubdomain = (destination, original) => {
   const orig = new URL(original).hostname;
   const dest = new URL(destination).hostname;
-  return orig === dest || orig[orig.length - dest.length - 1] === "." && orig.endsWith(dest);
+  return orig === dest || orig.endsWith(`.${dest}`);
 };
 
 // node_modules/node-fetch/src/body.js
@@ -5275,6 +5307,8 @@ var AbortError = class extends FetchBaseError {
 };
 
 // node_modules/node-fetch/src/index.js
+init_esm_min();
+init_from();
 var supportedSchemas = new Set(["data:", "http:", "https:"]);
 async function fetch(url, options_) {
   return new Promise((resolve, reject) => {
@@ -5419,7 +5453,11 @@ async function fetch(url, options_) {
           signal.removeEventListener("abort", abortAndFinalize);
         });
       }
-      let body = (0, import_node_stream2.pipeline)(response_, new import_node_stream2.PassThrough(), reject);
+      let body = (0, import_node_stream2.pipeline)(response_, new import_node_stream2.PassThrough(), (error) => {
+        if (error) {
+          reject(error);
+        }
+      });
       if (process.version < "v12.10") {
         response_.on("aborted", abortAndFinalize);
       }
@@ -5443,22 +5481,52 @@ async function fetch(url, options_) {
         finishFlush: import_node_zlib.default.Z_SYNC_FLUSH
       };
       if (codings === "gzip" || codings === "x-gzip") {
-        body = (0, import_node_stream2.pipeline)(body, import_node_zlib.default.createGunzip(zlibOptions), reject);
+        body = (0, import_node_stream2.pipeline)(body, import_node_zlib.default.createGunzip(zlibOptions), (error) => {
+          if (error) {
+            reject(error);
+          }
+        });
         response = new Response(body, responseOptions);
         resolve(response);
         return;
       }
       if (codings === "deflate" || codings === "x-deflate") {
-        const raw = (0, import_node_stream2.pipeline)(response_, new import_node_stream2.PassThrough(), reject);
+        const raw = (0, import_node_stream2.pipeline)(response_, new import_node_stream2.PassThrough(), (error) => {
+          if (error) {
+            reject(error);
+          }
+        });
         raw.once("data", (chunk) => {
-          body = (chunk[0] & 15) === 8 ? (0, import_node_stream2.pipeline)(body, import_node_zlib.default.createInflate(), reject) : (0, import_node_stream2.pipeline)(body, import_node_zlib.default.createInflateRaw(), reject);
+          if ((chunk[0] & 15) === 8) {
+            body = (0, import_node_stream2.pipeline)(body, import_node_zlib.default.createInflate(), (error) => {
+              if (error) {
+                reject(error);
+              }
+            });
+          } else {
+            body = (0, import_node_stream2.pipeline)(body, import_node_zlib.default.createInflateRaw(), (error) => {
+              if (error) {
+                reject(error);
+              }
+            });
+          }
           response = new Response(body, responseOptions);
           resolve(response);
+        });
+        raw.once("end", () => {
+          if (!response) {
+            response = new Response(body, responseOptions);
+            resolve(response);
+          }
         });
         return;
       }
       if (codings === "br") {
-        body = (0, import_node_stream2.pipeline)(body, import_node_zlib.default.createBrotliDecompress(), reject);
+        body = (0, import_node_stream2.pipeline)(body, import_node_zlib.default.createBrotliDecompress(), (error) => {
+          if (error) {
+            reject(error);
+          }
+        });
         response = new Response(body, responseOptions);
         resolve(response);
         return;
@@ -5508,11 +5576,17 @@ init_esm_min();
   AbortError,
   Blob,
   FetchError,
+  File,
   FormData,
   Headers,
   Request,
   Response,
+  blobFrom,
+  blobFromSync,
+  fileFrom,
+  fileFromSync,
   isRedirect
 });
 /*! fetch-blob. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> */
 /*! formdata-polyfill. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> */
+/*! node-domexception. MIT License. Jimmy Wärting <https://jimmy.warting.se/opensource> */
