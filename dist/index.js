@@ -4494,7 +4494,7 @@ var isBlob = (object) => {
   return object && typeof object === "object" && typeof object.arrayBuffer === "function" && typeof object.type === "string" && typeof object.stream === "function" && typeof object.constructor === "function" && /^(Blob|File)$/.test(object[NAME]);
 };
 var isAbortSignal = (object) => {
-  return typeof object === "object" && (object[NAME] === "AbortSignal" || object[NAME] === "EventTarget");
+  return object?.[NAME] === "AbortSignal";
 };
 var isDomainOrSubdomain = (destination, original) => {
   const orig = new URL(original).hostname;
@@ -4586,11 +4586,7 @@ var Body = class {
     const buffer = await consumeBody(this);
     return buffer.toString();
   }
-  buffer() {
-    return consumeBody(this);
-  }
 };
-Body.prototype.buffer = (0, import_node_util.deprecate)(Body.prototype.buffer, "Please use 'response.arrayBuffer()' instead of 'response.buffer()'", "node-fetch#buffer");
 Object.defineProperties(Body.prototype, {
   body: { enumerable: true },
   bodyUsed: { enumerable: true },
@@ -4652,7 +4648,7 @@ var clone = (instance, highWaterMark) => {
   if (instance.bodyUsed) {
     throw new Error("cannot clone body after it is used");
   }
-  if (body instanceof import_node_stream.default && typeof body.getBoundary !== "function") {
+  if (body instanceof import_node_stream.default) {
     p1 = new import_node_stream.PassThrough({ highWaterMark });
     p2 = new import_node_stream.PassThrough({ highWaterMark });
     body.pipe(p1);
@@ -4662,7 +4658,6 @@ var clone = (instance, highWaterMark) => {
   }
   return body;
 };
-var getNonSpecFormDataBoundary = (0, import_node_util.deprecate)((body) => body.getBoundary(), "form-data doesn't follow the spec and requires special treatment. Use alternative package", "https://github.com/node-fetch/node-fetch/issues/1167");
 var extractContentType = (body, request) => {
   if (body === null) {
     return null;
@@ -4682,9 +4677,6 @@ var extractContentType = (body, request) => {
   if (body instanceof FormData) {
     return `multipart/form-data; boundary=${request[INTERNALS].boundary}`;
   }
-  if (body && typeof body.getBoundary === "function") {
-    return `multipart/form-data;boundary=${getNonSpecFormDataBoundary(body)}`;
-  }
   if (body instanceof import_node_stream.default) {
     return null;
   }
@@ -4700,9 +4692,6 @@ var getTotalBytes = (request) => {
   }
   if (import_node_buffer.Buffer.isBuffer(body)) {
     return body.length;
-  }
-  if (body && typeof body.getLengthSync === "function") {
-    return body.hasKnownLength && body.hasKnownLength() ? body.getLengthSync() : null;
   }
   return null;
 };
