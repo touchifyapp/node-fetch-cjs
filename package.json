@@ -1,6 +1,6 @@
 {
   "name": "node-fetch-cjs",
-  "version": "4.0.0-beta.4",
+  "version": "3.2.1",
   "description": "A wrapper for node-fetch (a light-weight module that brings Fetch API to node.js) to be used in commonjs environment.",
   "main": "./dist/index.js",
   "sideEffects": false,
@@ -48,6 +48,6 @@
     "formdata-polyfill": "^4.0.10",
     "fetch-blob": "^3.1.4",
     "jest": "^27.3.1",
-    "node-fetch": "4.0.0-beta.4"
+    "node-fetch": "3.2.1"
   }
 }
