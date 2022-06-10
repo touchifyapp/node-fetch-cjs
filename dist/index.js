@@ -5373,7 +5373,9 @@ async function fetch(url, options_) {
       finalize();
     });
     fixResponseChunkedTransferBadEnding(request_, (error) => {
-      response.body.destroy(error);
+      if (response && response.body) {
+        response.body.destroy(error);
+      }
     });
     if (process.version < "v14") {
       request_.on("socket", (s2) => {
