@@ -3728,11 +3728,8 @@ var init_fetch_blob = __esm({
           } else {
             part = encoder.encode(`${element}`);
           }
-          const size = ArrayBuffer.isView(part) ? part.byteLength : part.size;
-          if (size) {
-            this.#size += size;
-            this.#parts.push(part);
-          }
+          this.#size += ArrayBuffer.isView(part) ? part.byteLength : part.size;
+          this.#parts.push(part);
         }
         this.#endings = `${options.endings === void 0 ? "transparent" : options.endings}`;
         const type = options.type === void 0 ? "" : String(options.type);
@@ -4018,20 +4015,18 @@ var init_from = __esm({
         this.#start = options.start;
         this.size = options.size;
         this.lastModified = options.lastModified;
-        this.originalSize = options.originalSize === void 0 ? options.size : options.originalSize;
       }
       slice(start, end) {
         return new BlobDataItem({
           path: this.#path,
           lastModified: this.lastModified,
-          originalSize: this.originalSize,
           size: end - start,
           start: this.#start + start
         });
       }
       async *stream() {
-        const { mtimeMs, size } = await stat(this.#path);
-        if (mtimeMs > this.lastModified || this.originalSize !== size) {
+        const { mtimeMs } = await stat(this.#path);
+        if (mtimeMs > this.lastModified) {
           throw new import_node_domexception.default("The requested file could not be read, typically due to permission problems that have occurred after a reference to a file was acquired.", "NotReadableError");
         }
         yield* (0, import_node_fs.createReadStream)(this.#path, {
@@ -5156,7 +5151,7 @@ var Request = class extends Body {
     if (/^(delete|get|head|options|post|put)$/i.test(method)) {
       method = method.toUpperCase();
     }
-    if ("data" in init) {
+    if (!isRequest(init) && "data" in init) {
       doBadDataWarn();
     }
     if ((init.body != null || isRequest(input) && input.body !== null) && (method === "GET" || method === "HEAD")) {
