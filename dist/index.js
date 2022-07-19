@@ -4507,6 +4507,11 @@ var isDomainOrSubdomain = (destination, original) => {
   const dest = new URL(destination).hostname;
   return orig === dest || orig.endsWith(`.${dest}`);
 };
+var isSameProtocol = (destination, original) => {
+  const orig = new URL(original).protocol;
+  const dest = new URL(destination).protocol;
+  return orig === dest;
+};
 
 // node_modules/node-fetch/src/body.js
 var pipeline = (0, import_node_util.promisify)(import_node_stream.default.pipeline);
@@ -5431,7 +5436,7 @@ async function fetch(url, options_) {
               referrer: request.referrer,
               referrerPolicy: request.referrerPolicy
             };
-            if (!isDomainOrSubdomain(request.url, locationURL)) {
+            if (!isDomainOrSubdomain(request.url, locationURL) || !isSameProtocol(request.url, locationURL)) {
               for (const name of ["authorization", "www-authenticate", "cookie", "cookie2"]) {
                 requestOptions.headers.delete(name);
               }
