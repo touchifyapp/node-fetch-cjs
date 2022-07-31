@@ -5042,7 +5042,7 @@ function isOriginPotentiallyTrustworthy(url) {
   if (hostIPVersion === 6 && /^(((0+:){7})|(::(0+:){0,6}))0*1$/.test(hostIp)) {
     return true;
   }
-  if (/^(.+\.)*localhost$/.test(url.host)) {
+  if (url.host === "localhost" || url.host.endsWith(".localhost")) {
     return false;
   }
   if (url.protocol === "file:") {
