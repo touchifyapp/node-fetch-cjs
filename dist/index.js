@@ -4437,7 +4437,7 @@ function dataUriToBuffer(uri) {
   for (let i2 = 1; i2 < meta.length; i2++) {
     if (meta[i2] === "base64") {
       base64 = true;
-    } else {
+    } else if (meta[i2]) {
       typeFull += `;${meta[i2]}`;
       if (meta[i2].indexOf("charset=") === 0) {
         charset = meta[i2].substring(8);
@@ -4964,6 +4964,20 @@ var Response = class extends Body {
     response[INTERNALS2].type = "error";
     return response;
   }
+  static json(data = void 0, init = {}) {
+    const body = JSON.stringify(data);
+    if (body === void 0) {
+      throw new TypeError("data is not JSON serializable");
+    }
+    const headers = new Headers(init && init.headers);
+    if (!headers.has("content-type")) {
+      headers.set("content-type", "application/json");
+    }
+    return new Response(body, {
+      ...init,
+      headers
+    });
+  }
   get [Symbol.toStringTag]() {
     return "Response";
   }
@@ -5294,9 +5308,6 @@ var getNodeRequestOptions = (request) => {
   let { agent } = request;
   if (typeof agent === "function") {
     agent = agent(parsedURL);
-  }
-  if (!headers.has("Connection") && !agent) {
-    headers.set("Connection", "close");
   }
   const search = getSearch(parsedURL);
   const options = {
